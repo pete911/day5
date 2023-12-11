@@ -5,40 +5,41 @@ import (
 	"testing"
 )
 
-func TestNewMapping(t *testing.T) {
-	tcs := []struct {
-		Lines    []MappingLine
-		Expected Mapping
-	}{
-		{
-			Lines: []MappingLine{
-				{Destination: 50, Source: 98, Length: 2},
-			},
-			Expected: Mapping{98: 50, 99: 51},
-		},
-		{
-			Lines: []MappingLine{
-				{Destination: 50, Source: 98, Length: 2},
-				{Destination: 52, Source: 50, Length: 3},
-			},
-			Expected: Mapping{50: 52, 51: 53, 52: 54, 98: 50, 99: 51},
-		},
-	}
+func TestMappingLine_GetDestination(t *testing.T) {
+	t.Run("input is within mapping", func(t *testing.T) {
+		mappingLine := NewMappingLine(0, 11, 42)
+		in := NewRange(11, 3)
+		out := mappingLine.GetDestination(in)
+		assert.Equal(t, []Range{{Start: 0, End: 3}}, out)
+	})
 
-	for _, tc := range tcs {
-		actual := NewMapping(tc.Lines)
-		assert.Equal(t, tc.Expected, actual)
-	}
+	t.Run("input is larger than mapping", func(t *testing.T) {
+		mappingLine := NewMappingLine(0, 11, 3)
+		in := NewRange(10, 5)
+		out := mappingLine.GetDestination(in)
+		assert.Equal(t, []Range{{Start: 0, End: 3}, {Start: 10, End: 11}, {Start: 14, End: 15}}, out)
+	})
 }
 
-func TestMapping_GetDst(t *testing.T) {
-	mapping := Mapping{50: 52, 51: 53}
-	t.Run("when mapping found, it is returned", func(t *testing.T) {
-		dst := mapping.GetDst(51)
-		assert.Equal(t, 53, dst)
+func TestRange_Split(t *testing.T) {
+	t.Run("input is within mapping", func(t *testing.T) {
+		mapping := Range{Start: 45, End: 60}
+		in := Range{Start: 50, End: 55}
+		out := mapping.Split(in)
+		assert.Equal(t, []Range{{Start: 50, End: 55}}, out)
 	})
-	t.Run("when mapping not found, input is returned", func(t *testing.T) {
-		dst := mapping.GetDst(75)
-		assert.Equal(t, 75, dst)
+
+	t.Run("input is larger than mapping", func(t *testing.T) {
+		mapping := Range{Start: 50, End: 55}
+		in := Range{Start: 45, End: 60}
+		out := mapping.Split(in)
+		assert.Equal(t, []Range{{Start: 50, End: 55}, {Start: 45, End: 50}, {Start: 55, End: 60}}, out)
+	})
+
+	t.Run("input does not match mapping", func(t *testing.T) {
+		mapping := Range{Start: 50, End: 55}
+		in := Range{Start: 10, End: 15}
+		out := mapping.Split(in)
+		assert.Equal(t, []Range{{Start: 10, End: 15}}, out)
 	})
 }
