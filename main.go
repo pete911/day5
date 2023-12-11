@@ -6,30 +6,28 @@ import "fmt"
 type Output map[string][]Range
 
 func main() {
-	out := Output{"seeds": Seeds}
-	for i, name := range MappingNames {
-		dst := Seeds
-		dst = Mappings[i].GetDestination(dst)
-		out[name] = dst
-	}
-
-	fmt.Println("seeds")
-	fmt.Printf("%+v\n", out["seeds"])
-	fmt.Println()
-	for _, name := range MappingNames {
-		fmt.Println(name)
-		fmt.Printf("%+v\n", out[name])
-		fmt.Println()
+	var outs []Output
+	for _, seed := range Seeds {
+		out := make(Output)
+		out["seeds"] = []Range{seed}
+		dst := []Range{seed}
+		for i, name := range MappingNames {
+			dst = Mappings[i].GetDestination(dst)
+			out[name] = dst
+		}
+		outs = append(outs, out)
 	}
 
 	var lowestLocation int
-	for i, v := range out["location"] {
-		if i == 0 {
-			lowestLocation = v.Start
-			continue
-		}
-		if lowestLocation > v.Start {
-			lowestLocation = v.Start
+	for x := range outs {
+		for i, v := range outs[x]["location"] {
+			if i == 0 {
+				lowestLocation = v.Start
+				continue
+			}
+			if lowestLocation > v.Start {
+				lowestLocation = v.Start
+			}
 		}
 	}
 	fmt.Printf("lowest location: %d\n", lowestLocation)
@@ -39,10 +37,17 @@ func main() {
 type Mapping []MappingLine
 
 func (m Mapping) GetDestination(source []Range) []Range {
+	mapped := make(map[string]struct{})
 	var out []Range
 	for _, mappingLine := range m {
 		for _, sourceLine := range source {
-			out = append(out, mappingLine.GetDestination(sourceLine)...)
+			for _, dst := range mappingLine.GetDestination(sourceLine) {
+				// do not add duplicates
+				if _, ok := mapped[fmt.Sprintf("%d:%d", dst.Start, dst.End)]; !ok {
+					mapped[fmt.Sprintf("%d:%d", dst.Start, dst.End)] = struct{}{}
+					out = append(out, dst)
+				}
+			}
 		}
 	}
 	return out
